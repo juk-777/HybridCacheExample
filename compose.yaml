@@ -1,0 +1,24 @@
+﻿services:
+  
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  
+  weatherApi:
+    depends_on:
+      redis:
+        condition: service_healthy
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5286:5286"
+    environment:
+      - ASPNETCORE_URLS=http://+:5286
