@@ -14,7 +14,7 @@ public class WeatherForecastController : ControllerBase
 
     private readonly IWeatherService _weatherService;
 
-    public WeatherForecastController([FromKeyedServices("concurrentDict_semaphore")] IWeatherService weatherService)
+    public WeatherForecastController([FromKeyedServices("hybridCache")] IWeatherService weatherService)
     {
         _weatherService = weatherService;
     }

@@ -3,6 +3,7 @@ using Serilog;
 using WeatherApi.Options;
 using WeatherApi.Services;
 using ZiggyCreatures.Caching.Fusion;
+using ZiggyCreatures.Caching.Fusion.Backplane.StackExchangeRedis;
 using ZiggyCreatures.Caching.Fusion.Serialization.SystemTextJson;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,15 +22,44 @@ builder.Services.Configure<WeatherOptions>(builder.Configuration.GetSection("Wea
 
 builder.Services.AddKeyedSingleton<IWeatherService, WeatherServiceHybridCache>("hybridCache");
 builder.Services.AddKeyedSingleton<IWeatherService, WeatherServiceConcurrentDictionary>("concurrentDict");
-builder.Services.AddKeyedSingleton<IWeatherService, WeatherServiceConcurrentDictionarySemaphore>("concurrentDict_semaphore");
+builder.Services.AddKeyedSingleton<IWeatherService, WeatherServiceConcurrentDictionarySemaphore>(
+    "concurrentDict_semaphore");
 builder.Services.AddKeyedSingleton<IWeatherService, WeatherServiceConcurrentDictionaryLazy>("concurrentDict_lazy");
 
 builder.Services.AddMemoryCache();
 builder.Services.AddFusionCache()
-    .WithDefaultEntryOptions(options => options.Duration = TimeSpan.FromMinutes(1))
+    .WithOptions(options =>
+    {
+        // DISTRIBUTED CACHE CIRCUIT-BREAKER
+        options.DistributedCacheCircuitBreakerDuration = TimeSpan.FromSeconds(2);
+    })
+    .WithDefaultEntryOptions(options =>
+    {
+        options.Duration = TimeSpan.FromMinutes(1);
+
+        // FAIL-SAFE OPTIONS
+        options.IsFailSafeEnabled = true;
+        options.FailSafeMaxDuration = TimeSpan.FromHours(2);
+        options.FailSafeThrottleDuration = TimeSpan.FromSeconds(30);
+
+        // FACTORY TIMEOUTS
+        options.FactorySoftTimeout = TimeSpan.FromMilliseconds(100);
+        options.FactoryHardTimeout = TimeSpan.FromMilliseconds(1500);
+
+        // DISTRIBUTED CACHE OPTIONS
+        options.DistributedCacheSoftTimeout = TimeSpan.FromSeconds(1);
+        options.DistributedCacheHardTimeout = TimeSpan.FromSeconds(2);
+        options.AllowBackgroundDistributedCacheOperations = true;
+
+        // JITTERING
+        options.JitterMaxDuration = TimeSpan.FromSeconds(2);
+    })
     .WithSerializer(new FusionCacheSystemTextJsonSerializer())
     .WithRegisteredMemoryCache()
     .WithDistributedCache(new RedisCache(new RedisCacheOptions { Configuration = "localhost:6379" }))
+    .WithBackplane(
+        new RedisBackplane(new RedisBackplaneOptions { Configuration = "localhost:6379" })
+    )
     .AsHybridCache();
 
 var app = builder.Build();
