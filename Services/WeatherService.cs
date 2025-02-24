@@ -15,7 +15,6 @@ public abstract class WeatherService(
     {
         logger.LogInformation("Getting weather for {City}", city);
 
-        await Task.Delay(TimeSpan.FromMilliseconds(500), cancellationToken);
         var url = $"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={_options.AppId}";
         var httpClient = httpClientFactory.CreateClient();
         var response = await httpClient.GetAsync(url, cancellationToken);
