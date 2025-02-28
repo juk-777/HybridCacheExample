@@ -27,8 +27,8 @@ builder.Services.AddKeyedSingleton<IWeatherService, WeatherServiceConcurrentDict
 builder.Services.AddKeyedSingleton<IWeatherService, WeatherServiceHybridCache>("hybridCache");
 
 builder.Services.AddMemoryCache();
-AddHybridCache(builder.Services);
-//AddHybridFusionCache(builder.Services);
+//AddHybridCache(builder.Services);
+AddHybridFusionCache(builder.Services);
 
 var app = builder.Build();
 

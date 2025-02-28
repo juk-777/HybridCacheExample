@@ -7,3 +7,6 @@ Accept: application/json
 
 GET {{WeatherApi_HostAddress}}/weather/London
 Accept: application/json
+
+### Запуск из PowerShell конкурентных запросов
+// 1..10 | ForEach-Object { Start-ThreadJob { Invoke-WebRequest -Uri "http://localhost:5286/weather/London" }}
